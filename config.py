@@ -1,6 +1,4 @@
-# client_id/secret resolution: default vs user-supplied 
-
-"""Config loading: Spotify client credentials, paths, and user-overridable settings."""
+"""config module loading Spotify client credentials from .env and setting up platform storage paths"""
 
 import os
 from dotenv import load_dotenv
