@@ -1,0 +1,1 @@
+# SpotifyOAuth loopback flow, token cache via platformdirs

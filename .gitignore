@@ -1,0 +1,7 @@
+spoti/
+.env
+project-map.md
+__pycache__/
+*.pyc
+.spotify_token_cache
+*.egg-info/

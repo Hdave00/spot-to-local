@@ -1,0 +1,1 @@
+#login.py          # triggers auth.py, shows waiting state while browser opens

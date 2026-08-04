@@ -1,0 +1,1 @@
+# thin wrapper: list_playlists(), get_tracks(playlist_id) this replaces "Exportify" entirely
