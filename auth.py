@@ -67,4 +67,53 @@ def get_auth_code(redirect_uri: str) -> str | None:
 
     return server.auth_code
 
-#TODO, functions to get the spotify Oauth, to return a ready usable spotipy client and finally a logout function to log the client out  
+#TODO, functions to get the spotify Oauth, to return a ready usable spotipy client and finally a logout function to log the client out
+
+def get_spotify_oauth() -> SpotifyOAuth:
+
+    """ Returns the user's spofity metadata """
+
+    return SpotifyOAuth(
+        client_id=config.CLIENT_ID,
+        client_secret=config.CLIENT_SECRET,
+        redirect_uri=config.REDIRECT_URI,
+        scope=config.SCOPE,
+        cache_handler=CacheFileHandler(cache_path=config.TOKEN_CACHE_PATH),
+        open_browser=False,  # we control browser-opening ourselves below
+
+    )
+
+
+def get_authenticated_client() -> spotipy.Spotify:
+
+    """Returns a ready-to-use spotipy client. Uses cached token if valid,
+    refreshes silently if expired, otherwise runs the full browser login flow."""
+
+    sp_oauth = get_spotify_oauth()
+    token_info = sp_oauth.validate_token(sp_oauth.cache_handler.get_cached_token)
+
+    # check for token_info:
+    if not token_info:
+        auth_url = sp_oauth.get_authorize_url()
+        webbrowser.open(auth_url)
+
+        code = get_auth_code(config.REDIRECT_URI)
+
+        if not code:
+            raise RuntimeError("Login was timed out or denied. Please try again.")
+
+        token_info = sp_oauth.get_access_token(code, as_dict=True, check_cache=False)
+
+
+    # now return the spotipy client with the acces token
+    return spotipy.Spotify(auth=token_info["acces_token"])
+
+
+# Finally, log the user out
+def logout():
+
+    """ Clears the cached token, forcing a fresh login next time. """
+
+    import os
+    if os.path.exists(config.TOKEN_CACHE_PATH):
+        os.remove(config.TOKEN_CACHE_PATH)
