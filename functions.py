@@ -1,3 +1,5 @@
+""" Contains the functions from spotfetch, including some edited functions. """
+
 import yt_dlp
 import requests
 import os

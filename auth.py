@@ -7,7 +7,7 @@ server here exists for the few seconds it takes to catch the redirect."""
 
 import threading
 import webbrowser
-from http.server import BaseHTTPRequestHandler, HTTPSServer
+from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import urlparse, parse_qs
 
 import spotipy
@@ -42,21 +42,21 @@ class _CallbackHandler(BaseHTTPRequestHandler):
 
         self.wfile.write(msg.encode("utf-8"))
 
-        def log_message(self, format, *args):
-            pass # silence default request logging
+    def log_message(self, format, *args):
+        pass # silence default request logging
 
 
 def get_auth_code(redirect_uri: str) -> str | None:
 
-    """ Spins up a one-shot local server on the redirect URI's host/port,
+    """ Spins up a one time local server on the redirect URI's host/port,
     opens the browser, blocks until Spotify redirects back, then shuts down. """
 
-    # save the url parse, host and port, to pass to the HTTPSserver for the class to handle the request for the auth code
+    # save the url parse, host and port, to pass to the HTTPserver for the class to handle the request for the auth code
     parsed = urlparse(redirect_uri)
     host, port = parsed.hostname, parsed.port
 
     # server variable to store the host and port of the https server and the properties of the callbackhandler class, keep the auth_code and auth_error none
-    server = HTTPSServer((host, port), _CallbackHandler)
+    server = HTTPServer((host, port), _CallbackHandler)
     server.auth_code = None
     server.auth_error = None
 
@@ -67,7 +67,6 @@ def get_auth_code(redirect_uri: str) -> str | None:
 
     return server.auth_code
 
-#TODO, functions to get the spotify Oauth, to return a ready usable spotipy client and finally a logout function to log the client out
 
 def get_spotify_oauth() -> SpotifyOAuth:
 
@@ -90,12 +89,27 @@ def get_authenticated_client() -> spotipy.Spotify:
     refreshes silently if expired, otherwise runs the full browser login flow."""
 
     sp_oauth = get_spotify_oauth()
-    token_info = sp_oauth.validate_token(sp_oauth.cache_handler.get_cached_token)
+    token_info = sp_oauth.validate_token(sp_oauth.cache_handler.get_cached_token())
 
     # check for token_info:
     if not token_info:
         auth_url = sp_oauth.get_authorize_url()
-        webbrowser.open(auth_url)
+
+        # since the webbrowser.open method returns either True or False on success or failure (repsectively) to open a webbrowser tab automotically, try-except-raise it
+        # NOTE In Textual, we want to actually render that URL as clickable text in the login screen like a static widget rather than relying on stdout, since Textual takes over the terminal display
+        try:
+            opened = webbrowser.open(auth_url)
+        except webbrowser.Error as e:
+            raise RuntimeError(
+                f"Could not launch a browser automatically: {e}\n"
+                f"Open this URL manually to log in: \n{auth_url}"
+            )
+
+        if not opened:
+            raise RuntimeError(
+                f"Browser did not open automatically.\n"
+                f"Open this URL manually to log in:\n{auth_url}"
+            )
 
         code = get_auth_code(config.REDIRECT_URI)
 
