@@ -16,7 +16,7 @@ from spotipy.cache_handler import CacheFileHandler
 
 import config
 
-class _CallbackHandler(BaseHTTPRequestHandler):
+class CallbackHandler(BaseHTTPRequestHandler):
     """ Captures the ?code=... param Spotify redirects back with, then dies. """
 
     # function to handle the GET request to handle the temp HTTPS server and send appropriate headers
@@ -56,7 +56,7 @@ def get_auth_code(redirect_uri: str) -> str | None:
     host, port = parsed.hostname, parsed.port
 
     # server variable to store the host and port of the https server and the properties of the callbackhandler class, keep the auth_code and auth_error none
-    server = HTTPServer((host, port), _CallbackHandler)
+    server = HTTPServer((host, port), CallbackHandler)
     server.auth_code = None
     server.auth_error = None
 
