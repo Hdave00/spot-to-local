@@ -2,8 +2,7 @@
 # paste the redirected URL back into the terminal. For an "auto-login" experience, 
 # we make a temp HTTP loopback server, which grabs the code param and hands it to spotipy programmatically
 
-"""Spotify OAuth via local loopback server. The HTTP
-server here exists for the few seconds it takes to catch the redirect."""
+""" Spotify OAuth via local loopback server. The HTTP server here exists for the few seconds it takes to catch the redirect. """
 
 import threading
 import webbrowser

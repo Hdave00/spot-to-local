@@ -1,7 +1,4 @@
-#login.py          # triggers auth.py, shows waiting state while browser opens
-
-""" Login screen: triggers the OAuth loopback flow in a background worker
-so the TUI doesn't freeze while waiting on the browser. """
+""" Login screen that triggers the OAuth loopback flow in a background worker, so the TUI doesn't freeze while waiting on the browser. """
 
 from textual.screen import Screen
 from textual.containers import Vertical, Center

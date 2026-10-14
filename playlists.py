@@ -1,5 +1,4 @@
-""" Playlists screen: lists the logged-in user's playlists in a DataTable.
-Selecting one stores its id on the app and advances to tracks.py. """
+""" Playlists screen that lists the logged-in user's playlists in a DataTable. Selecting one stores its id on the app and advances to tracks.py. """
 
 from textual.screen import Screen
 from textual.containers import Vertical

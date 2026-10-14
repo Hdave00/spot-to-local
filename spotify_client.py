@@ -1,7 +1,5 @@
-# thin wrapper: list_playlists(), get_tracks(playlist_id) this replaces the need for users to go to Exportify manually
-
-"""Thin wrapper over spotipy calls. Spotify metadata retrieval, paginated. This is the piece that replaces
-Exportify but has similar underlying endpoints, called directly instead of via a browser tool that outputs a CSV."""
+""" Thin wrapper over spotipy calls. Spotify metadata retrieval and paginated. This is the piece that replaces
+Exportify but has similar underlying endpoints, which are called directly instead of via a browser tool that outputs a CSV. """
 
 from spotipy import Spotify
 
