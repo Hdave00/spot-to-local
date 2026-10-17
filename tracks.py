@@ -125,3 +125,63 @@ class TrackScreen(Screen):
         self._render_table()
         self.query_one("#track_table", DataTable).focus()
 
+
+    # Rendering the datatable and the playlists, tracks and songs therein.
+    def _visible_indices(self) -> list[int]:
+
+        """returns a filtered list of track names, artist names and album names for the filter query"""
+
+        # normalise the filter params, if no results found, return a list of all existing tracks
+        results = self._filter.lower()
+        if not results:
+            return list(range(len(self._tracks)))
+
+        # save the output in a list, enumerate the tracks so far and iterate over indices in list of dicts and if they exist after filtering, append them to final list
+        output = [] 
+        for i, t in enumerate(self._tracks):
+            unfiltered = " ".join(
+                [t["track_name"], ", ".join(t["artist_names"]), t.get("album_name") or ""]
+            ).lower()
+
+            if results in unfiltered:
+                output.append(i)
+
+        return output
+
+    # render the table with the right data
+    def _render_table(self):
+
+        table = self.query_one("#track_table", DataTable)
+        table.clear()
+        visible = self._visible_indices
+
+        # for each result that was returned in filtered tracks, get the ith index of the track and add it to the table rows
+        for i in visible:
+            t = self._tracks[i]
+            # using "Text()" to avoid Song [Remastered] being treated as markup tags, just need plain text. Use UNCHECKED and CHECKED global variables to enable marking.
+            table.add_row(
+                Text(CHECKED if i in self._selected else UNCHECKED),
+                Text(t["track_name"]),
+                Text(", ".join(t["artist_names"])),
+                Text(t.get("album_name") or ""),
+                key=str(i),
+
+            )
+        self._update_status(len(visible))
+
+
+    # now update the status of the widget to show changes
+    def _update_status(self, shown: int | None = None):
+
+        # if the number of rows to add is none(no CHECKED or UNCHECKED), then just return the previous rows 
+        if shown is None:
+            shown = len(self._visible_indices())
+
+        # else we update the Datatable status and prompt user for further action 
+        self.query_one("#status", Static).update(
+                        Text(f"{len(self._selected)} selected · showing {shown}/{len(self._tracks)}"
+                                "   (space toggle, / search, d download, esc back)")
+        )
+
+
+    # actions for buttons pressed next 
