@@ -16,7 +16,7 @@ from spotipy.cache_handler import CacheFileHandler
 import config
 
 class CallbackHandler(BaseHTTPRequestHandler):
-    """ Captures the ?code=... param Spotify redirects back with, then dies. """
+    """ Captures the ?code=... param/query Spotify redirects back with, then dies. """
 
     # function to handle the GET request to handle the temp HTTPS server and send appropriate headers
     def do_GET(self):
