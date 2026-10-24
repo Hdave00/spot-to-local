@@ -79,6 +79,7 @@ class TrackScreen(Screen):
         self.query_one("#search", Input).display = False
         self.load_tracks()
 
+    # NOTE - Loading Section -
 
     # create a thread for loading tracks, acount for errors, load the tracks, and show the relevant animations
     @work(thread=True, exclusive=True)
@@ -126,6 +127,8 @@ class TrackScreen(Screen):
         self.query_one("#track_table", DataTable).focus()
 
 
+    # NOTE - Rendering Section -
+
     # Rendering the datatable and the playlists, tracks and songs therein.
     def _visible_indices(self) -> list[int]:
 
@@ -136,7 +139,9 @@ class TrackScreen(Screen):
         if not results:
             return list(range(len(self._tracks)))
 
-        # save the output in a list, enumerate the tracks so far and iterate over indices in list of dicts and if they exist after filtering, append them to final list
+        # save the output in a list, enumerate the tracks so far and iterate over indices in list of dicts(for tracks) and if they exist after filtering, append them to final list
+        # here, 'i' gives us the the position of the track and 't' is the track dict at that position, then we get the track name at that index, join it with artist names and
+        # album name and append to new list as a list of dicts (to preserv data struct) which we can then, read its field with to populate data table.
         output = [] 
         for i, t in enumerate(self._tracks):
             unfiltered = " ".join(
@@ -184,4 +189,34 @@ class TrackScreen(Screen):
         )
 
 
-    # actions for buttons pressed next 
+    # NOTE - Actions Section -
+
+    # actions for buttons pressed next, start with getting the index of current selection
+    def _current_index(self) -> int | None:
+
+        # query the table and if no rows exist (data isnt populated) return None
+        table = self.query_one("#track_table", DataTable)
+        if table.row_count == 0:
+            return None
+
+        # now for each row and key in row, we need to get coordinates and map to cell key, and return the that index row_key's value as int
+        row_key, _ = table.coordinate_to_cell_key(table.cursor_coordinate)
+        return int(row_key.value)
+
+
+    # set the toggle function that should get current id, from the current index (get the track details where the user is at to enable CHECKED or UNCHECKED)
+    def action_toggle(self):
+
+        idx = self._current_index()
+        if idx is None:
+            return
+
+        # xor the values of different selected indexes using built in function to update the all selected indexes and update the overall selected/unselected status
+        # of the DataTable object NOTE: CHECKED and UNCHECKED are NOT bools globally
+        self._selected.symmetric_difference_update({idx})
+        table = self.query_one("#track_table", DataTable)
+        table.update_cell(
+            str(idx), 'sel', Text(CHECKED if idx in self._selected else UNCHECKED)
+        )
+        
+        self._update_status()
