@@ -220,3 +220,67 @@ class TrackScreen(Screen):
         )
         
         self._update_status()
+
+
+    # when selected called prev func
+    def on_data_table_row_selected(self, event: DataTable.RowSelected):
+        # let Enter button select too
+        self.action_toggle()
+
+
+    # show all visible incides ie, show all selected options
+    def action_select_all(self):
+
+        # function only affects currently shown
+        self._selected.update(self._visible_indices())
+        self._render_table()
+
+
+    # if nothing selected, clear selected and render table
+    def action_selected_none(self):
+        self._selected.clear()
+        self._render_table()
+
+
+    def action_focus_search(self):
+        self.query_one('#search', Input).focus()
+
+
+    # handle changes to search input, strip string and render matches
+    def on_input_changed(self, event: Input.Changed):
+
+        if event.input.id == "search":
+            self._filter = event.value.strip()
+            self._render_table()
+
+
+    # after search, return focus to track table
+    def on_input_submitted(self, event: Input.Submitted):
+
+        self.query_one("#track_table", DataTable).focus()
+
+
+    # download selected tracks
+    def action_download(self):
+
+        # if nothing selected, show message and stop
+        if not self._selected:
+            self.query_one('#status', Static).update(
+                Text("Nothing selected, toggle/select tracks with space first.", style="yellow")
+            )
+            return
+
+        # if there are tracks, then for all tracks in the selections, push the tracks, so the queue keeps the selection intact
+        self.app.selected_tracks = [self._tracks[i] for i in sorted(self.selected)]
+        self.app.push_screen("queue")
+
+
+    # finally, switch the screen to to the "playlists" from the track table selection. Only do this if focus is not on the search input, if it does, show track table and stop
+    def action_back(self):
+
+        search = self.query_one("#search", Input)
+        if search.has_focus:
+            self.query_one("#track_table", DataTable).focus()
+            return
+
+        self.app.switch_screen("playlists")
