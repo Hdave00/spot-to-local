@@ -9,7 +9,7 @@ APP_NAME = "spottolocal"
 load_dotenv()
 
 # spotify app credentials 
-# Default (lsave, which is how its called as a spotify dev app), users can override via their own .env, or environment variables without doing any code stuff.
+# Default (lsave, which is how its called as a spotify dev app), users can override via their own .env, or environment variables.
 CLIENT_ID = os.getenv("SPOTIFY_CLIENT_ID")
 CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET")
 REDIRECT_URI = os.getenv("SPOTIFY_REDIRECT_URI", "http://127.0.0.1:8888/callback")

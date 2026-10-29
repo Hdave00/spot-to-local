@@ -86,19 +86,19 @@ class LoginScreen(Screen):
 
         # now we need to make sure we show the right screen/widget when login is successfull or if it fails
 
-        def on_login_success(self, sp):
+    def _on_login_success(self, sp):
 
-            # save the authenticated client on the App instance and switch screen to the playlists the user has in their accounts
-            self.app.sp = sp
-            self.app.switch_screen("playlists")
+        # save the authenticated client on the App instance and switch screen to the playlists the user has in their accounts
+        self.app.sp = sp
+        self.app.switch_screen("playlists")
 
 
-        def on_login_failed(self, message: str):
+    def _on_login_failed(self, message: str):
 
-            # remove the spinner, show the error message, and show retry button for full manual login again
-            self.query_one("#spinner", LoadingIndicator).display = False
-            self.query_one("#status", Static).update(f"[red]{message}[/red]")
-            self.query_one("#retry", Button).disabled = False
+        # remove the spinner, show the error message, and show retry button for full manual login again
+        self.query_one("#spinner", LoadingIndicator).display = False
+        self.query_one("#status", Static).update(f"[red]{message}[/red]")
+        self.query_one("#retry", Button).disabled = False
 
 
 

@@ -105,7 +105,8 @@ def run(csv_folder, output_base, audio_format="mp3", platform="youtube"):
     save_skipped(skipped_songs, output_base)
     print("\nAll downloads completed.")
 
-# ------------------------------------ Helpers from here ------------------------------------
+
+# NOTE - Helpers from here ------------------------------------
 
 # this is for checking keystrokes for skipping, pausing and quitting the batch download sscript
 def check_keyboard():

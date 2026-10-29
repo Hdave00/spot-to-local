@@ -16,7 +16,7 @@ UNCHECKED = "○"
 
 
 # screen tracking class under which, all functionality for the Screen object can be manipulated
-# NOTE -- 1. "self" here is THE SCREENS OWN STATE SO USE '_' FOR INTERNAL HELPERS FFS
+# NOTE -- 1. "self" here is THE SCREENS OWN STATE SO USE '_' FOR INTERNAL HELPERS
 # -- 2. "compose()" DECLARES THE WIDGETS
 # -- 3. "on_<something>" and "action_<something>" METHODS ARE TEXTUAL'S OWN EVENT HANDLERS 
 class TrackScreen(Screen):
@@ -36,7 +36,7 @@ class TrackScreen(Screen):
 
     # set a list of instantiated Binding objects that maps a key to an action
     BINDINGS = [
-        Binding("space", "toggle", "Toggle"),
+        Binding("space", "toggle_track", "Toggle"),
         Binding("a", "select_all", "All (shown)"),
         Binding("n", "select_none", "None"),
         Binding("slash", "focus_search", "Search"),
@@ -205,14 +205,14 @@ class TrackScreen(Screen):
 
 
     # set the toggle function that should get current id, from the current index (get the track details where the user is at to enable CHECKED or UNCHECKED)
-    def action_toggle(self):
+    def action_toggle_track(self):
 
         idx = self._current_index()
         if idx is None:
             return
 
         # xor the values of different selected indexes using built in function to update the all selected indexes and update the overall selected/unselected status
-        # of the DataTable object NOTE: CHECKED and UNCHECKED are NOT bools globally
+        # of the DataTable object
         self._selected.symmetric_difference_update({idx})
         table = self.query_one("#track_table", DataTable)
         table.update_cell(
@@ -225,7 +225,7 @@ class TrackScreen(Screen):
     # when selected called prev func
     def on_data_table_row_selected(self, event: DataTable.RowSelected):
         # let Enter button select too
-        self.action_toggle()
+        self.action_toggle_track()
 
 
     # show all visible incides ie, show all selected options
