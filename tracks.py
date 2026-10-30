@@ -224,7 +224,7 @@ class TrackScreen(Screen):
 
     # when selected called prev func
     def on_data_table_row_selected(self, event: DataTable.RowSelected):
-        # let Enter button select too
+        # let Enter button enable selection
         self.action_toggle_track()
 
 
