@@ -53,7 +53,7 @@ class QueueScreen(Screen):
                 key=str(i),
             )
 
-        self.run_queue() # NOTE make this function
+        self.run_queue()
 
 
     # running the downlaod queue in an exclusive worker thread, loop over tracks; skip if self.cancel_request is called
