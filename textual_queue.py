@@ -15,16 +15,19 @@ from textual.widgets import DataTable, Footer, LoadingIndicator, Static, Progres
 STYLES = {"queued": "dim", "downloading": "yellow", "done": "green",
           "failed": "red", "cancelled": "dim"}   # module level, above the class
 
-BINDINGS = [("c", "cancel_downloads", "Cancel")]
-
 
 class QueueScreen(Screen):
+
+    BINDINGS = [("c", "cancel_downloads", "Cancel")]
 
     # cancel off by default and map failed songs to a list of strings
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.cancel_requested = False
         self.failures: list[str] = []
+        self.counts = {"done": 0, "failed": 0, "cancelled": 0}
+        self.finished = False
+
 
     def compose(self):
         
@@ -32,6 +35,7 @@ class QueueScreen(Screen):
             Static("Downloading Songs...", id="status"),
             ProgressBar(total=len(self.app.selected_tracks), show_eta=True, id="overall"),
             DataTable(id="queue_table", cursor_type="row"),
+            Static("", id="failures"),
         )
         yield Footer()
 
@@ -53,6 +57,8 @@ class QueueScreen(Screen):
                 key=str(i),
             )
 
+        # donw show failures until there are some to show
+        self.query_one("#failures", Static).display = False
         self.run_queue()
 
 
@@ -89,14 +95,53 @@ class QueueScreen(Screen):
     def set_status(self, idx: int, status: str, note: str = ""):
 
         # set the label for the current album in the data table row, use the status string and note to show the actual status of the download and update that cell
+        # each failure is stored as "name: reason"
         table = self.query_one("#queue_table", DataTable)
         label = f"{status}: {note}" if note else status
         table.update_cell(str(idx), "status", Text(label, style=STYLES[status]))
 
         #check status and move on if no issues, else append failed ones to "failed" list with track number and actual "track_name"
-        if status in ("done", "failed", "cancelled"):
+        if status in self.counts:
+            self.counts += 1
             self.query_one("#overall", ProgressBar).advance(1)
         if status == "failed":
-            self.failures.append(self.app.selected_tracks[idx]["track_name"])
+            name = self.app.selected_tracks[idx]["track_name"]
+            self.failures.append(f"{name}: {note}")
 
-    
+
+    # signifies end of queue show N done and X failed, enable functionality to go Back and list of failures 
+    def finish(self):
+
+        # finish the current queue, shoe the user a summary of done and faile, if cancelled, append the number of cancelled with counts to the count dict,
+        # update status then show sumamry and give option to go back 
+        self.finished =  True
+        c = self.counts
+        summary = f"Finished: {c['done']} done, {c['failed']} failed"
+        if c["cancelled"]:
+            summary += f", {c['cancelled']}, cancelled"
+            self.query_one("#status", Static).update(Text(summary + " (esc to go back)"))
+
+        # if any failed, create a status update, join on list if failues and show fstring of strs inside, and show notif
+        box = self.query_one("#failures", Static)
+        box.update(Text("Failed:\n" + "\n".join(self.failures), style="red"))
+        box.display = True
+
+
+    def action_cancel_downloads(self):
+
+        # if finished returns true, return, otherwise set cancel_requested to true and query status to update
+        if self.finished:
+            return
+        self.cancel_requested = True
+        self.query_one("#status", Static).update(Text("Cancelling after the current track..."))
+
+
+    def action_back(self):
+
+        # if finished is false, update to notify user to let the downloads finish or cancel, then pop screen to return
+        if not self.app.finished:
+            self.query_one("#status", Static).update(Text("Still downloading, press c to cancel first.", style="yellow"))
+            return
+
+        # will need to return back to menu, or the previous screen.
+        self.app.pop_screen()
