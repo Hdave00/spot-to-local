@@ -18,7 +18,7 @@ STYLES = {"queued": "dim", "downloading": "yellow", "done": "green",
 
 class QueueScreen(Screen):
 
-    BINDINGS = [("c", "cancel_downloads", "Cancel")]
+    BINDINGS = [("c", "cancel_downloads", "Cancel"), ("escape", "back", "Back")]
 
     # cancel off by default and map failed songs to a list of strings
     def __init__(self, *args, **kwargs):
