@@ -67,40 +67,16 @@ def run(csv_folder, output_base, audio_format="mp3", platform="youtube"):
             # for each album and song in the album, call download_spotify_song with the metadata that it needs, and log any error
             print(f"Downloading {i}/{len(songs)}: {song['track_name']}")
             try:
-                download_spotify_song(
-                    format=audio_format,
-                    metadata=song,
-                    output_path=album_output_folder,
-                    cookiefile=None,
-                    platform=platform
-                )
+                if download_one(song, audio_format, platform, album_output_folder) == "skipped":
+                    print(f"Skipping already downloaded: {song['track_name']}")
             except Exception as e:
-                # fallback to YouTube search if using ytmusic
-                if platform == "ytmusic":
-                    print(f"ytmusic failed for {song['track_name']}, retrying with YouTube...")
-                    try:
-                        download_spotify_song(
-                            format=audio_format,
-                            metadata=song,
-                            output_path=album_output_folder,
-                            cookiefile=None,
-                            platform="youtube"
-                        )
-                    except Exception as e2:
-                        print(f"Failed again: {e2}")
-                        skipped_songs.append({
-                            "album": album_name,
-                            "track": song['track_name'],
-                            "artist": ', '.join(song['artist_names']),
-                            "error": str(e2)
-                        })
-                else:
-                    skipped_songs.append({
-                        "album": album_name,
-                        "track": song['track_name'],
-                        "artist": ', '.join(song['artist_names']),
-                        "error": str(e)
-                    })
+                print(f"Failed: {e}")
+                skipped_songs.append({
+                    "album": album_name,
+                    "track": song['track_name'],
+                    "artist": ', '.join(song['artist_names']),
+                    "error": str(e),
+                })
 
     save_skipped(skipped_songs, output_base)
     print("\nAll downloads completed.")
@@ -180,6 +156,34 @@ def save_skipped(skipped_songs, output_base):
         print(f"\nSkipped/failed songs logged to: {path}")
     else:
         print("\nNo songs were skipped or failed.")
+
+
+# NOTE function stays in batch_download.py due to it being called here by run(), 
+def download_one(track, audio_format, platform, output_dir, cookiefile=None):
+
+    """Returns 'done' or 'skipped'. Raises if it fails (after the youtube fallback)."""
+
+    # save skipped to files, raise if alt method of download also fails and if all okay, return done
+    final_file = os.path.join(
+        output_dir,
+        f"{track['track_name']} - {', '.join(track['artist_names'])}.{audio_format}",
+    )
+    if os.path.exists(final_file):
+        return "skipped"
+
+    try:
+        download_spotify_song(format=audio_format, metadata=track,
+                              output_path=output_dir, cookiefile=cookiefile,
+                              platform=platform)
+    except Exception:
+        if platform != "ytmusic":
+            raise
+        # ytmusic failed, retry once on plain YouTube; if this raises, the caller sees it
+        download_spotify_song(format=audio_format, metadata=track,
+                              output_path=output_dir, cookiefile=cookiefile,
+                              platform="youtube")
+    return "done"
+
  
 # CLI entry point, also keeps the script runnable standalone
 if __name__ == "__main__":

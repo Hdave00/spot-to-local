@@ -271,8 +271,12 @@ class TrackScreen(Screen):
             return
 
         # if there are tracks, then for all tracks in the selections, push the tracks, so the queue keeps the selection intact
-        self.app.selected_tracks = [self._tracks[i] for i in sorted(self.selected)]
-        self.app.push_screen("queue")
+        folder = self.app.selected_playlist_name
+        self.app.selected_tracks = [
+            {**self._tracks[i], "folder": folder} for i in sorted(self._selected)
+        ]
+        from textual_queue import QueueScreen
+        self.app.push_screen(QueueScreen())
 
 
     # finally, switch the screen to to the "playlists" from the track table selection. Only do this if focus is not on the search input, if it does, show track table and stop
@@ -283,4 +287,5 @@ class TrackScreen(Screen):
             self.query_one("#track_table", DataTable).focus()
             return
 
-        self.app.switch_screen("playlists")
+        from playlists import PlaylistsScreen
+        self.app.switch_screen(PlaylistsScreen())

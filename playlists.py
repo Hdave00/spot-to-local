@@ -3,7 +3,9 @@
 from textual.screen import Screen
 from textual.containers import Vertical
 from textual.widgets import Static, DataTable, LoadingIndicator
+from textual.binding import Binding
 from textual import work
+from rich.text import Text
 
 import spotify_client
 
@@ -23,7 +25,23 @@ class PlaylistsScreen(Screen):
         
     """
     # if playlist changes between sessions dont restart app
-    BINDINGS = [("r", "refresh", "Refresh")]
+    BINDINGS = [
+        ("r", "refresh", "Refresh"),
+        Binding("space", "toggle_playlist", "Toggle"),
+        Binding("a", "select_all", "All"),
+        Binding("n", "select_none", "None"),
+        Binding("d", "download_selected", "Download selected"),
+    ]
+
+    # new init for keeping track and mapping playlist names to a dict and also mapping checked to a set
+    def __init__(self, *args, **kwargs):
+
+        super().__init__(*args, **kwargs)
+        # id -> name
+        self.playlist_names: dict[str, str] = {}
+        # ids of checked playlists
+        self.checked: set[str] = set()
+
 
     # create prototypes for showing users playlists, show a loading indicatior and a table populated with data rows
     def compose(self):
@@ -34,10 +52,13 @@ class PlaylistsScreen(Screen):
         )
 
 
-    # then render the table with relevant details
+    # then render the table with relevant details, we also ned keyed columns so a single cell can be updated
     def on_mount(self):
         table = self.query_one("#playlist_table", DataTable)
-        table.add_columns("Name", "Owner", "Tracks")
+        table.add_column("", key="sel", width=3)
+        table.add_column("Name", key="name")
+        table.add_column("Owner", key="owner")
+        table.add_column("Tracks", key="tracks")
         table.display = False
         self.load_playlists()
 
@@ -95,10 +116,14 @@ class PlaylistsScreen(Screen):
         # now for each each playlist, we want to add the row for each data column, and add them
         # NOTE Textual lets you attach an arbitrary key to each row, so you don't need a separate lookup dict mapping displayed row index ie, playlist ID 
         # event.row_key.value in the selection handler hands that exact playlist_id string back, so we dont guess row position and we dont need a lookup dict
+        # the p["owner"] or "" is needed because spotify can return None for display_name, for some reason.
         for p in playlists:
-            # row_key = playlist id, so on selection we can map right back 
-            table.add_row(p["name"], p["owner"], str(p["track_count"]), key=p["id"])
-
+            self.playlist_names[p["id"]] = p["name"]
+            table.add_row(
+                Text("●" if p["id"] in self.checked else "○"),
+                Text(p["name"]), Text(p["owner"] or ""), Text(str(p["track_count"])),
+                key=p["id"],
+            )
 
         # no loading indicators and bring autofocus to table
         self.set_loading(False)
@@ -110,4 +135,8 @@ class PlaylistsScreen(Screen):
         # save playlist_id when a row is clicked, save that as the actual "playlist_id", and switch screens
         playlist_id = event.row_key.value
         self.app.selected_playlist_id = playlist_id
-        self.app.switch_screen("tracks")
+        self.app.selected_playlist_name = self.playlist_names[playlist_id]
+
+        # NOTE potential circular import issue, TEST IT - 06.11.2026
+        from tracks import TrackScreen
+        self.app.switch_screen(TrackScreen())

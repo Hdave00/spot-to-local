@@ -1,7 +1,8 @@
 """ Download progress, calls functions from functions.py and batch_download.py as Workers """
 
 import spotify_client, spotipy, yt_dlp
-import functions
+import re, os
+import batch_download
 
 from rich.text import Text
 from textual import work
@@ -13,7 +14,12 @@ from textual.widgets import DataTable, Footer, LoadingIndicator, Static, Progres
 
 # what each status should look like
 STYLES = {"queued": "dim", "downloading": "yellow", "done": "green",
-          "failed": "red", "cancelled": "dim"}   # module level, above the class
+          "failed": "red", "cancelled": "dim", "skipped": "red"}
+
+
+# helper function with the same regex as run() in batch_download.py, used in run_queue() here to output skipped files into a separate dir folder
+def folder_name(name: str) -> str:
+    return re.sub(r'[<>:"/\\|?*]', '', name or "").strip() or "Unknown"
 
 
 class QueueScreen(Screen):
@@ -25,7 +31,7 @@ class QueueScreen(Screen):
         super().__init__(*args, **kwargs)
         self.cancel_requested = False
         self.failures: list[str] = []
-        self.counts = {"done": 0, "failed": 0, "cancelled": 0}
+        self.counts = {"done": 0, "failed": 0, "cancelled": 0, "skipped": 0}
         self.finished = False
 
 
@@ -68,7 +74,6 @@ class QueueScreen(Screen):
 
         # call the settings global dict from menu.py and use that to initialise settings and change if needed
         settings = self.app.settings    
-        output_dir = settings["output_path"]
 
         # loop over tracks and skip if cancel_requested is called
         for i, track in enumerate(self.app.selected_tracks):
@@ -78,15 +83,18 @@ class QueueScreen(Screen):
 
             # elif set the downloading status, and try to download the songs
             self.app.call_from_thread(self.set_status, i, "downloading")
-            try:
-                functions.download_spotify_song(
-                    settings["format"], track, output_dir,
-                    settings["cookie_file"], settings["platform"]
+            output_dir = os.path.join(settings["output_path"], folder_name(track.get("folder", "")))
+
+            try:   
+                os.makedirs(output_dir, exist_ok=True)
+                result = batch_download.download_one(
+                    track, settings["format"], settings["platform"],
+                    output_dir, settings["cookie_file"],
                 )
             except Exception as e:
                 self.app.call_from_thread(self.set_status, i, "failed", str(e))
             else:
-                self.app.call_from_thread(self.set_status, i, "done")
+                self.app.call_from_thread(self.set_status, i, result)
 
         self.app.call_from_thread(self.finish)
 
@@ -102,7 +110,7 @@ class QueueScreen(Screen):
 
         #check status and move on if no issues, else append failed ones to "failed" list with track number and actual "track_name"
         if status in self.counts:
-            self.counts += 1
+            self.counts[status] += 1
             self.query_one("#overall", ProgressBar).advance(1)
         if status == "failed":
             name = self.app.selected_tracks[idx]["track_name"]
@@ -145,3 +153,6 @@ class QueueScreen(Screen):
 
         # will need to return back to menu, or the previous screen.
         self.app.pop_screen()
+
+
+    
