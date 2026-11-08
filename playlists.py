@@ -140,3 +140,77 @@ class PlaylistsScreen(Screen):
         # NOTE potential circular import issue, TEST IT - 06.11.2026
         from tracks import TrackScreen
         self.app.switch_screen(TrackScreen())
+
+
+    def action_toggle_playlist(self):
+
+        table = self.query_one("#playlist_screen", DataTable)
+        if table.row_count == 0:
+            return 
+
+        row_key, _ = table.coordinate_to_cell_key(table.cursor_coordinate)
+        pid = row_key.value
+        self.checked.symmetric_difference_update({pid})
+        table.update_cell(pid, "sel", Text("●" if pid in self.checked else "○"))
+        self.show_selection_status()
+
+
+    def action_select_all(self):
+        self.checked.update(self.playlist_names)
+        self.refresh_marks()
+
+
+    def action_select_none(self):
+        self.checked.clear()
+        self.refresh_marks()
+
+
+    def refresh_marks(self):
+
+        table = self.query_one("#playlist_tbale", DataTable)
+        for pid in self.playlist_names:
+            table.update_cell(pid, "sel", Text("●" if pid in self.checked else "○"))
+        self.show_selection_status()
+
+
+    def show_selection_status(self):
+        self.query_one("#status", Static).update(Text(f"{len(self.checked)} playlist(s) selected - d to download, Enter to pick tracks"))
+
+
+    def action_download_selected(self):
+
+        if not self.checked:
+            self.query_one("#status", Static).update(Text("Nothing selected, toggle playlists with space first.", style="yellow"))
+            return
+
+        self.fetch_selected(sorted(self.checked))
+
+
+    @work(thread=True, exclusive=True, group="fetch")
+    def fetch_selected(self, playlist_ids: list[str]):
+
+        # create a list, then for each numbered playlsit in there, and its id from 1, show the number and the name of the playlist and append to the list
+        items = []
+        try:
+            for n, pid in enumerate(playlist_ids, 1):
+                name = self.playlist_names[pid]
+                self.app.call_from_thread(self.query_one("#status", Static).update(
+                    Text(f"Fetching tracks in {n}/{len(playlist_ids)}: {name}")
+                ))
+
+                # then for each track in playlist, create a folder with the name of playlist and add tracks in there
+                for track in spotify_client.get_tracks(self.app.sp, pid):
+                    items.append({**track, "folder": name})
+        # catch error and call open_queue function to switch to queue screen for items list
+        except Exception as e:
+            self.app.call_from_thread(self._on_error, str(e))
+            return
+        self.app.call_from_thread(self.open_queue, items)
+
+
+    # the items list is now a bunch of dicts with playlist and name, map the func as such and switch to queuescreen
+    def open_queue(self, items: list[dict]):
+
+        self.app.seleted_tracks = items
+        from textual_queue import QueueScreen
+        self.app.push_screen(QueueScreen())
