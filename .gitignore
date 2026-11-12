@@ -5,3 +5,4 @@ __pycache__/
 *.pyc
 .spotify_token_cache
 *.egg-info/
+lsave.log

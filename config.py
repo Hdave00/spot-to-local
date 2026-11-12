@@ -4,7 +4,7 @@ import os
 from dotenv import load_dotenv
 from platformdirs import user_config_dir, user_cache_dir
 
-APP_NAME = "spottolocal"
+APP_NAME = "lsave"
 
 load_dotenv()
 
@@ -24,7 +24,7 @@ if not CLIENT_ID or not CLIENT_SECRET:
         "Set them in a .env file or as environment variables."
     )
 
-# storage paths, these are OS agnostic and user specific. If a storage path doesn't exist, it will be created.
+# storage paths, OS agnostic and user specific. If a storage path doesn't exist, it will be created.
 CONFIG_DIR = user_config_dir(APP_NAME)
 CACHE_DIR = user_cache_dir(APP_NAME)
 os.makedirs(CONFIG_DIR, exist_ok=True)

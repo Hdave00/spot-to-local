@@ -1,5 +1,3 @@
-"""This is the main TUI file, core logic and functions is in functions.py"""
-
 import functions
 import os
 import sys
@@ -11,7 +9,6 @@ from rich.table import Table
 from rich.align import Align
 from rich import box
 
-
 console = Console()
 
 settings = {
@@ -22,7 +19,7 @@ settings = {
 }
 
 art = r"""
-                        ____              _   _____    _       _     
+                        ____             _   _____    _       _     
                       / ___| _ __   ___ | |_|  ___|__| |_ ___| |__  
                       \___ \| '_ \ / _ \| __| |_ / _ \ __/ __| '_ \ 
                         ___)| |_) | (_) | |_|  _|  __/ || (__| | | |
@@ -530,13 +527,3 @@ def main_menu():
             console.print("\nThank you for using SpotFetch!", style="bold cyan")
             console.print("Bye Bye!!", style="bold yellow")
             sys.exit(0)
-
-if __name__ == "__main__":
-    try:
-        main_menu()
-    except KeyboardInterrupt:
-        console.print("\n\nGoodbye!", style="bold cyan")
-        sys.exit(0)
-    except Exception as e:
-        console.print(f"\nAn unexpected error occurred: {e}", style="bold red")
-        sys.exit(1)

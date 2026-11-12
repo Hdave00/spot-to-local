@@ -1,5 +1,14 @@
-import os, re, csv, sys, msvcrt, argparse, unicodedata
+import os, re, csv, sys, argparse, unicodedata
 from functions import read_exportify_csv_file, download_spotify_song
+
+
+# import msvcrt only if running on Windows
+try:
+    import msvcrt
+    WINDOWS_PLATFORM = True
+except ImportError:
+    WINDOWS_PLATFORM = False
+
 
 sys.stdout.reconfigure(encoding='utf-8')
 
@@ -82,10 +91,33 @@ def run(csv_folder, output_base, audio_format="mp3", platform="youtube"):
     print("\nAll downloads completed.")
 
 
+def list_csv_files(folder: str) -> list[dict]:
+    """ Scan folder for .csv files, same sort/normalize as run(). Returns [{"path", "name"}] per file, no track count, since that means parsing
+    every file up front; tracks.py shows the real count once opened. """
+
+    entries = sorted(
+        os.scandir(folder),
+        key=lambda e: unicodedata.normalize("NFC", e.name).casefold(),
+    )
+    out = []
+    for entry in entries:
+        name = unicodedata.normalize("NFC", entry.name)
+        if not name.lower().endswith(".csv"):
+            continue
+        album_name = re.sub(r'[<>:"/\\|?*]', '', os.path.splitext(name)[0])
+        out.append({"path": entry.path, "name": album_name})
+    return out
+
+
 # NOTE - Helpers from here ------------------------------------
 
 # this is for checking keystrokes for skipping, pausing and quitting the batch download sscript
 def check_keyboard():
+
+    """Checks for keystrokes (Windows only; skips safely on Unix/macOS)."""
+    
+    if not WINDOWS_PLATFORM:
+        return None
     
     # if any of the declared keys are hit, behave accordingly
     if msvcrt.kbhit():
@@ -166,8 +198,7 @@ def download_one(track, audio_format, platform, output_dir, cookiefile=None):
     # save skipped to files, raise if alt method of download also fails and if all okay, return done
     final_file = os.path.join(
         output_dir,
-        f"{track['track_name']} - {', '.join(track['artist_names'])}.{audio_format}",
-    )
+        f"{track['track_name']} - {', '.join(track['artist_names'])}.{audio_format}")
     if os.path.exists(final_file):
         return "skipped"
 

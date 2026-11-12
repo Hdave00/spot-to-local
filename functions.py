@@ -12,7 +12,24 @@ from mutagen.flac import FLAC, Picture
 import csv
 import re
 import typing
-from rich import print
+import logging
+#from rich import print
+#from rich.text import Text
+
+
+logger = logging.getLogger(__name__)
+
+
+from textual.widgets import Static
+
+class ConfigStatusBanner(Static):
+    """Displays current active settings persistently."""
+    def on_mount(self):
+        self.update_display()
+
+    def update_display(self):
+        s = self.app.settings
+        self.update(f" Settings: Format={s['format'].upper()} | Platform={s['platform']} | Out={s['output_path']}")
 
 
 def download_from_url(url, format: typing.Literal["mp3", "m4a", "flac"], output_path=".", cookiefile=None):
@@ -114,7 +131,7 @@ def read_tunemymusic_csv_file(file_path: str) -> list:
             del song['Track name'], song['Artist name']
 
         except Exception as e:
-            print(f"some error occured : {e}")
+            logger.exception(f"some error occured : {e}")
 
     return songs_list
 
@@ -134,10 +151,10 @@ def read_download_custom_csv(file_path: str, format: typing.Literal["mp3", "m4a"
             song['artist_name'] = sanitize_string(song['artist'])
 
             del song['name'], song['artist']
-            print(f"{i}/{n} - Downloading {song['track_name']} by {song['artist_name']}")
+            logger.exception(f"{i}/{n} - Downloading {song['track_name']} by {song['artist_name']}")
             download_from_query(song, format, output_path, cookiefile, platform)
         except Exception as e:
-            print(f"some error happened: {e}, skipping song ...")
+            logger.exception(f"some error happened: {e}, skipping song ...")
             continue
 
 
@@ -152,10 +169,10 @@ def read_download_urls_txt(file_path: str, format: typing.Literal["mp3", "flac",
     for i, line in enumerate(lines, 1):
         line.strip()
         try:
-            print(f"Downloading {line} url {i}/{n}")
+            logger.exception(f"Downloading {line} url {i}/{n}")
             download_from_url(line, format, output_path, cookiefile)
         except Exception as e:
-            print(f"couldnt download {line}, error: {e},  skipping ...")
+            logger.exception(f"couldnt download {line}, error: {e},  skipping ...")
             continue
 
 
@@ -192,7 +209,7 @@ def read_exportify_csv_file(file_path: str) -> list:
             for key in keys_to_remove:
                     del song[key]
         except Exception as e:
-            print(f"some error occured when handling metadata for song {song['track_name']}, error {e} skipping the song.")
+            logger.exception(f"some error occured when handling metadata for song {song['track_name']}, error {e} skipping the song.")
             continue
             
 
@@ -299,12 +316,12 @@ def embed_spotify_metadata_mutagen(audiofile, image_file_path, metadata, format:
 
     except Exception as e:
         track_name = metadata.get('track_name', 'Unknown')
-        print(f"An error occurred during metadata embedding for track {track_name}: {e}")
+        logger.exception(f"An error occurred during metadata embedding for track {track_name}: {e}")
 
         
 def download_spotify_song(format: typing.Literal["mp3", "flac", "m4a"], metadata, output_path='.', cookiefile=None, platform="youtube"):
     if metadata is None:
-        print("no song metadata, skipping song...")
+        logger.exception("no song metadata, skipping song...")
         return
 
     # metadata
@@ -317,7 +334,7 @@ def download_spotify_song(format: typing.Literal["mp3", "flac", "m4a"], metadata
     final_audio_file_path = os.path.join(output_path, f"{track_name} - {artist_names_str}.{format}")
     
     if os.path.exists(final_audio_file_path):
-        print(f"File {final_audio_file_path} already exists. Skipping download.")
+        logger.exception(f"File {final_audio_file_path} already exists. Skipping download.")
         return
     
     image_file_path = os.path.join(output_path, f"temp_cover_{track_name}.jpg")
@@ -331,7 +348,7 @@ def download_spotify_song(format: typing.Literal["mp3", "flac", "m4a"], metadata
                 for chunk in response.iter_content(chunk_size=8192):
                     out_file.write(chunk)
         except requests.exceptions.RequestException as e:
-            print(f"WARNING : Error downloading image for track {track_name}: {e}")
+            logger.exception(f"WARNING : Error downloading image for track {track_name}: {e}")
             image_file_path = None
     else:
         image_file_path = None
@@ -373,7 +390,7 @@ def download_spotify_song(format: typing.Literal["mp3", "flac", "m4a"], metadata
             raise Exception(f"Expected downloaded file not found at {downloaded_file_path}")
 
     except Exception as e:
-        print(f"\nAn error occurred during audio download for the track {track_name}: {e}")
+        logger.exception(f"\nAn error occurred during audio download for the track {track_name}: {e}")
         if image_file_path and os.path.exists(image_file_path):
             os.remove(image_file_path)
         raise  # re-raise so batch_download.py can catch it and log to skipped_songs

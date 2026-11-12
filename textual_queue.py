@@ -53,6 +53,7 @@ class QueueScreen(Screen):
         table.add_column("Title", key="title")
         table.add_column("Artist", key="artist")
         table.add_column("Album", key="album")
+        table.add_column("Status", key="status")
 
         # from tracks.py, in the action_download func, we have the "selected_tracks" variable that is a set() of playlists, unpack, enum and add metadata to each track
         for i, t in enumerate(self.app.selected_tracks):
@@ -127,12 +128,14 @@ class QueueScreen(Screen):
         summary = f"Finished: {c['done']} done, {c['failed']} failed"
         if c["cancelled"]:
             summary += f", {c['cancelled']}, cancelled"
-            self.query_one("#status", Static).update(Text(summary + " (esc to go back)"))
+
+        self.query_one("#status", Static).update(Text(summary + " (esc to go back)"))
 
         # if any failed, create a status update, join on list if failues and show fstring of strs inside, and show notif
         box = self.query_one("#failures", Static)
-        box.update(Text("Failed:\n" + "\n".join(self.failures), style="red"))
-        box.display = True
+        if self.failures:
+            box.update(Text("Failed:\n" + "\n".join(self.failures), style="red"))
+            box.display = True
 
 
     def action_cancel_downloads(self):
@@ -147,7 +150,7 @@ class QueueScreen(Screen):
     def action_back(self):
 
         # if finished is false, update to notify user to let the downloads finish or cancel, then pop screen to return
-        if not self.app.finished:
+        if not self.finished:
             self.query_one("#status", Static).update(Text("Still downloading, press c to cancel first.", style="yellow"))
             return
 

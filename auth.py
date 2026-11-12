@@ -119,7 +119,7 @@ def get_authenticated_client() -> spotipy.Spotify:
 
 
     # now return the spotipy client with the acces token
-    return spotipy.Spotify(auth=token_info["acces_token"])
+    return spotipy.Spotify(auth=token_info["access_token"])
 
 
 # Finally, log the user out

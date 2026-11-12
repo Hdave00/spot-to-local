@@ -7,8 +7,9 @@ from textual.binding import Binding
 from textual.containers import Vertical
 from textual.screen import Screen
 from textual.widgets import DataTable, Footer, Input, LoadingIndicator, Static
+
+from functions import read_exportify_csv_file
  
-import spotify_client
 
 # global toggle indicator
 CHECKED = "●"
@@ -87,9 +88,7 @@ class TrackScreen(Screen):
         self.app.call_from_thread(self._set_loading, True)
 
         try: 
-            tracks = spotify_client.get_tracks(
-                self.app.sp, self.app.selected_playlist_id
-            )
+            tracks = read_exportify_csv_file(self.app.selected_csv_path)
         except Exception as e:
             self.app.call_from_thread(self._on_error, str(e))
             return
@@ -158,7 +157,7 @@ class TrackScreen(Screen):
 
         table = self.query_one("#track_table", DataTable)
         table.clear()
-        visible = self._visible_indices
+        visible = self._visible_indices()
 
         # for each result that was returned in filtered tracks, get the ith index of the track and add it to the table rows
         for i in visible:
